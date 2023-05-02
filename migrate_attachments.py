@@ -274,7 +274,8 @@ def copy_attachments(column_data):
             base.download_file(item_url, item_name)
 
             new_url = upload_to_seafile(item_url, item_name)
-            updated_data.append(new_url)
+            item["url"] = new_url
+            updated_data.append(item)
 
     return updated_data
 
