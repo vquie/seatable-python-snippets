@@ -40,7 +40,7 @@ base.auth()
 
 # get context
 row = context.current_row
-table = context.current_table
+table_name = context.current_table
 
 
 def create_config_table(config_table):
@@ -274,8 +274,7 @@ def copy_attachments(column_data):
             base.download_file(item_url, item_name)
 
             new_url = upload_to_seafile(item_url, item_name)
-            item["url"] = new_url
-            updated_data.append(item)
+            updated_data.append(new_url)
 
     return updated_data
 
@@ -298,7 +297,7 @@ def main():
 
     # Iterate through the 'file' columns and copy the attachments
     updated_row_data = []
-    columns = base.list_columns(table)
+    columns = base.list_columns(table_name)
     for item in columns:
         if item.get("type") == "file":
             item.get("key")
@@ -312,7 +311,7 @@ def main():
 
     # Update the row in SeaTable with the new URLs
     if updated_row_data:
-        base.update_row(table, row["_id"], updated_row_data)
+        base.update_row(table_name, row["_id"], updated_row_data)
     else:
         raise ValueError("No 'file' columns found in the row")
 
