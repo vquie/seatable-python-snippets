@@ -153,6 +153,23 @@ def get_upload_url(
             f"Failed to get upload URL. Status code: {response.status_code}"
         )
 
+def check_seafile_dir(dir):
+    """
+    Check if a given directory exists in the Seafile library.
+
+    Args:
+        dir (str): The directory to check.
+
+    Returns:
+        int: The HTTP status code indicating the result of the API request.
+
+    """
+
+    url = f"{seafile_host}/api/v2.1/repos/{seafile_library_id}/dir/detail/?path={dir}"
+    headers = {"Authorization": f"Token {seafile_api_token}"}
+
+    return requests.get(url, headers=headers)
+
 
 def check_seafile_upload_dir(seafile_upload_dir):
     """
@@ -166,16 +183,13 @@ def check_seafile_upload_dir(seafile_upload_dir):
         None
     """
 
-    url = f"{seafile_host}/api/v2.1/repos/{seafile_library_id}/dir/detail/?path={seafile_upload_dir}"
-    headers = {"Authorization": f"Token {seafile_api_token}"}
-
-    response = requests.get(url, headers=headers)
+    response = check_seafile_dir(seafile_upload_dir)
 
     while response.status_code == 404:
         create_seafile_upload_dir(seafile_upload_dir)
 
         # Get the details of the path again
-        response = requests.get(url, headers=headers)
+        response = check_seafile_dir(seafile_upload_dir)
 
         # If the directory was successfully created, break out of the loop
         if response.status_code == 200:
@@ -203,14 +217,17 @@ def create_seafile_upload_dir(seafile_upload_dir):
     # Loop through each directory and try to create it
     for i in range(1, len(dirs) + 1):
         dir_path = "/" + "/".join(dirs[:i])
-        url = f"{seafile_host}/api/v2.1/repos/{seafile_library_id}/dir/?p={dir_path}"
-        data = {"operation": "mkdir"}
-        headers = {"Authorization": f"Token {seafile_api_token}"}
 
-        response = requests.post(url, data=data, headers=headers)
-        if response.status_code == 201:
-            print("Created directory: " + dir_path)
+        response = check_seafile_dir(dir_path)  # Call check_seafile_dir
 
+        if response.status_code != 200:
+            url = f"{seafile_host}/api/v2.1/repos/{seafile_library_id}/dir/?p={dir_path}"
+            data = {"operation": "mkdir"}
+            headers = {"Authorization": f"Token {seafile_api_token}"}
+            
+            response = requests.post(url, data=data, headers=headers)
+            if response.status_code == 201:
+                print("Created directory: " + dir_path)
 
 def get_upload_dir():
     """
