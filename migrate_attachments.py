@@ -21,7 +21,7 @@ Usage:
 Note: Make sure that your settings are correct before running the script.
 """
 __author__ = "Vitali Quiering"
-__version__ = "1.0.0-beta"
+__version__ = "1.0.0"
 
 from datetime import datetime
 
