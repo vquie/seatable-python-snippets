@@ -21,10 +21,13 @@ Usage:
 Note: Make sure that your settings are correct before running the script.
 """
 __author__ = "Vitali Quiering"
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 from datetime import datetime
 
+import os
+import random
+import string
 import requests
 from seatable_api import Base, context
 from seatable_api.constants import ColumnTypes
@@ -244,7 +247,7 @@ def get_upload_dir():
     return f"{seafile_dir}/{date_string}"
 
 
-def upload_to_seafile(item_url, item_name):
+def upload_to_seafile(item_name):
     """
     Upload a file to the Seafile library.
 
@@ -271,6 +274,12 @@ def upload_to_seafile(item_url, item_name):
     return f"seafile-connector://{seafile_library_api_token}/{seafile_upload_dir}/{item_name}"
 
 
+def generate_random_filename(length):
+    allowed_characters = string.ascii_letters + string.digits
+    random_filename = ''.join(random.choice(allowed_characters) for _ in range(length))
+    return random_filename
+
+
 def copy_attachments(column_data):
     """
     Copy attachments from Seatable to Seafile and update the URLs in the column data.
@@ -290,7 +299,12 @@ def copy_attachments(column_data):
 
             base.download_file(item_url, item_name)
 
-            new_url = upload_to_seafile(item_url, item_name)
+            filename, filename_suffix = os.path.splitext(item_name)
+            new_item_name = generate_random_filename(8) + filename_suffix
+            
+            os.rename(item_name, new_item_name)
+            
+            new_url = upload_to_seafile(new_item_name)
             item["url"] = new_url
             updated_data.append(item)
 
