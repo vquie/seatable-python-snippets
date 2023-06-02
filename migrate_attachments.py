@@ -329,7 +329,8 @@ def main():
 
     # Update the row in SeaTable with the new URLs
     if updated_row_data:
-        base.update_row(table_name, row["_id"], updated_row_data)
+        for row_data in updated_row_data:
+            base.update_row(table_name, row["_id"], row_data)
     else:
         raise ValueError("No 'file' columns found in the row")
 
