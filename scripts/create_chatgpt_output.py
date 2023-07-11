@@ -88,11 +88,12 @@ def call_chatgpt(chatgpt_role, chatgpt_vision_labels, chatgpt_additional_notes):
     data = {
         "messages": [
             {"role": "system", "content": chatgpt_role},
-            {"role": "user", "content": f"{chatgpt_role}\n{chatgpt_additional_notes}\nimage labels: {chatgpt_vision_labels}\n"},
+            {"role": "user", "content": f"Please mind these notes, refine and improve them for your task: {chatgpt_additional_notes}\n"}, 
+            {"role": "user", "content": f"Google Vision Labels: {chatgpt_vision_labels}\n"},
         ],
         "model": "gpt-3.5-turbo",
-        "max_tokens": 100,
-        "temperature": 0.8,
+        "max_tokens": 1000,
+        "temperature": 0.9,
         "n": 1
     }
     response = requests.post(url, headers=headers, json=data)
