@@ -116,7 +116,12 @@ def google_vision_process(encoded_image):
     # Extract and print the labels
     if "responses" in response_json and len(response_json["responses"]) > 0:
         labels = response_json["responses"][0].get("labelAnnotations", [])
-        return labels
+        label_results = []
+        for label in labels:
+            label_description = label["description"]
+            label_score = label["score"]
+            label_results.append((label_description, label_score))
+        return label_results
     else:
         print("Label detection failed.")
         exit()
