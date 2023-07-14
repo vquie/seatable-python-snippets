@@ -1,7 +1,12 @@
 """
+This script is used to configure and interact with Seatable API for ChatGPT.
+
+Author: Vitali Quiering
+Version: 1.0.0
 """
+
 __author__ = "Vitali Quiering"
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 import os
 import requests
@@ -10,23 +15,25 @@ import json
 import urllib.parse
 from seatable_api import Base, context
 
-# config
+# Configuration variables
 config_table = "_settings"
-
 chatgpt_role_column = "AI Role"
 chatgpt_vision_labels_column = "Google Vision API Labels"
 chatgpt_additional_notes_column = "ChatGPT Additional Notes"
 chatgpt_output_column = "ChatGPT Generated Description"
 
+# Retrieve server URL and API token from the context
 server_url = context.server_url
 api_token = context.api_token
 
+# Initialize the Seatable API client
 base = Base(api_token, server_url)
 base.auth()
 
-# get context
+# Retrieve the current row and table name from the context
 row = context.current_row
 table_name = context.current_table
+
 
 def get_config_values(config_table):
     """
@@ -51,6 +58,7 @@ def get_config_values(config_table):
 
     return config_dict
 
+
 def check_config_table(config_table):
     """
     Check if a config table exists, and create it if it does not.
@@ -73,13 +81,19 @@ def check_config_table(config_table):
     if not config_table_found:
         raise SystemExit("Config table not found!")
 
-check_config_table(config_table)
-config_values = get_config_values(config_table)
-locals().update(config_values)
-
-import requests
 
 def call_chatgpt(chatgpt_role, chatgpt_vision_labels, chatgpt_additional_notes):
+    """
+    Call the ChatGPT API to generate a response based on the provided input.
+
+    Args:
+        chatgpt_role (str): The role for the AI in the conversation.
+        chatgpt_vision_labels (str): Google Vision labels for the input.
+        chatgpt_additional_notes (str): Additional notes for the AI.
+
+    Returns:
+        The generated text response from ChatGPT.
+    """
     url = "https://api.openai.com/v1/chat/completions"
     headers = {
         "Content-Type": "application/json",
@@ -100,26 +114,49 @@ def call_chatgpt(chatgpt_role, chatgpt_vision_labels, chatgpt_additional_notes):
     generated_text = response.json()["choices"][0]["message"]["content"]
     return generated_text
 
-def main():
 
+def main():
+    """
+    The main function that executes the ChatGPT generation process.
+
+    Returns:
+        None
+    """
+
+    # Retrieve the role from the specified column in the current row
     chatgpt_role = row[chatgpt_role_column]
 
+    # Retrieve the vision labels from the specified column in the current row
     chatgpt_vision_labels = row[chatgpt_vision_labels_column]
+
+    # Retrieve the additional notes from the specified column in the current row
     if chatgpt_additional_notes_column in row:
         chatgpt_additional_notes = row[chatgpt_additional_notes_column]
     else:
         chatgpt_additional_notes = ""  # Or you can use an empty list [], if you want an empty array
 
+    # Generate the text using the call_chatgpt function
     generated_text = call_chatgpt(chatgpt_role, chatgpt_vision_labels, chatgpt_additional_notes)
     
+    # Prepare the updated row data with the generated text
     row_data = {
         chatgpt_output_column: generated_text
     }
 
+    # Update the row in the table with the generated text
     base.update_row(table_name, row["_id"], row_data)
 
 
 if __name__ == "__main__":
+    # Check if the config table exists
+    check_config_table(config_table)
+    
+    # Retrieve config values and update the local scope
+    config_values = get_config_values(config_table)
+    locals().update(config_values)
+
+    # Call the main function
     main()
 
-exit()
+    # Terminate the script execution
+    exit()
