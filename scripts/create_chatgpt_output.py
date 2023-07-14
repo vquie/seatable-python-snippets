@@ -1,8 +1,6 @@
 """
 This script is used to configure and interact with Seatable API for ChatGPT.
-
-Author: Vitali Quiering
-Version: 1.0.0
+It requires the `seatable-api` package to be installed.
 """
 
 __author__ = "Vitali Quiering"
