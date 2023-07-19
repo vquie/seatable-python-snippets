@@ -71,8 +71,8 @@ def check_config_table(config_table):
         raise SystemExit("Config table not found!")
 
 def main():
-    insta_image_url = row['image_column']  # Replace 'image_column' with the column name that contains the image URL
-    insta_caption = row['text']  # Replace 'text' with the column name that contains the caption
+    insta_image_url = row[image_column]  # Replace 'image_column' with the column name that contains the image URL
+    insta_caption = row[text]  # Replace 'text' with the column name that contains the caption
     
     access_token = 'your_access_token'
     
