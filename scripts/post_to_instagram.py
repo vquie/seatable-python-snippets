@@ -69,49 +69,62 @@ def check_config_table(config_table):
     # If the config table does not exist, exit with an error message
     if not config_table_found:
         raise SystemExit("Config table not found!")
+    
+def get_instagram_user_token(user_access_token):
+    print(user_access_token)
+    # Step 3: Request Instagram Account Access
+    url = f"https://graph.facebook.com/v17.0/me/accounts"
+    params = {
+        "access_token": user_access_token,
+        "fields": "instagram_business_account",
+    }
+
+    response = requests.get(url, params=params)
+
+    print(response.headers)
+    print(response)
+
+    exit()
+
+    data = response.json()
+
+    # Extract the Instagram Business Account ID from the response
+    instagram_account_id = data['data'][0]['instagram_business_account']['id']
+
+    # Step 4: Obtain Instagram User Token
+    url = f"https://graph.facebook.com/v17.0/{instagram_account_id}"
+    params = {
+        "fields": "access_token",
+        "access_token": user_access_token,
+    }
+
+    response = requests.get(url, params=params)
+    data = response.json()
+
+    # Extract the Instagram User Token from the response
+    instagram_user_token = data['access_token']
+
+    return instagram_user_token
+
+def post_content_on_instagram(instagram_user_token):
+    # Step 5: Post content on Instagram
+    # Use the Instagram User Token to post content on Instagram
+    # Implement your posting logic here
+    pass
 
 def main():
-    insta_image_url = row[image_column]  # Replace 'image_column' with the column name that contains the image URL
-    insta_caption = row[text]  # Replace 'text' with the column name that contains the caption
+    # insta_image_url = row[image_column]  # Replace 'image_column' with the column name that contains the image URL
+    # insta_caption = row[text]  # Replace 'text' with the column name that contains the caption
+
+    #print(instagram_user_access_token)
+
+    instagram_user_token = get_instagram_user_token(instagram_user_access_token)
+
+    post_content_on_instagram(instagram_user_token)
+
+    print(instagram_user_token)
     
-    access_token = 'your_access_token'
-    
-    session = requests.Session()
-    
-    session.headers.update({
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36',
-        'Referer': 'https://www.instagram.com/',
-        'Authorization': f'Bearer {access_token}'
-    })
-    
-    session.get('https://www.instagram.com/')
-    
-    upload_url = 'https://graph.instagram.com/me/media'
-    
-    image_data = session.get(insta_image_url).content
-    
-    files = {
-        'media': ('image.jpg', image_data)
-    }
-    
-    upload_response = session.post(upload_url, files=files)
-    
-    if upload_response.status_code == 200:
-        media_id = upload_response.json().get('id')
-        caption_url = f'https://graph.instagram.com/{media_id}'
-        
-        caption_data = {
-            'caption': insta_caption
-        }
-        
-        caption_response = session.post(caption_url, data=caption_data)
-        
-        if caption_response.status_code == 200:
-            print('Image and caption posted successfully!')
-        else:
-            print('Failed to add caption to the image.')
-    else:
-        print('Failed to upload image.')
+
 
 if __name__ == "__main__":
     # Check if the config table exists
@@ -123,6 +136,3 @@ if __name__ == "__main__":
 
     # Call the main function
     main()
-
-    # Terminate the script execution
-    exit()
