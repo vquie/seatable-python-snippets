@@ -1,31 +1,27 @@
 """
-This script is used to configure and interact with Seatable API for ChatGPT.
+This script is used to configure and interact with Seatable API and DALL-E.
 It requires the `seatable-api` package to be installed.
 """
 
 __author__ = "Vitali Quiering"
-__version__ = "1.0.0-alpha"
-
-import os
+__version__ = "1.0.0"
 import requests
-import base64
 import json
-import urllib.parse
 import random
 import string
 from seatable_api import Base, context
 
 # Configuration variables
-config_table = "_settings"
-dalle_prompt_column = "Image Prompt"
-dalle_output_column = "Image"
+CONFIG_TABLE = "_settings"
+DALLE_PROMPT_COLUMN = "Image Prompt for DALL-E"
+DALLE_OUTPUT_COLUMN = "Image"
 
 # Retrieve server URL and API token from the context
-server_url = context.server_url
-api_token = context.api_token
+SERVER_URL = context.server_url
+API_TOKEN = context.api_token
 
 # Initialize the Seatable API client
-base = Base(api_token, server_url)
+base = Base(API_TOKEN, SERVER_URL)
 base.auth()
 
 # Retrieve the current row and table name from the context
@@ -79,6 +75,7 @@ def check_config_table(config_table):
     if not config_table_found:
         raise SystemExit("Config table not found!")
 
+
 def get_dalle_url(dalle_prompt):
     """
     Call the DALL-E API to generate an image based on the provided input.
@@ -113,7 +110,7 @@ def main():
     """
 
     # Retrieve the role from the specified column in the current row
-    dalle_prompt = row[dalle_prompt_column]
+    dalle_prompt = row[DALLE_PROMPT_COLUMN]
 
     # Generate the image using the call_dalle function
     generated_image_url = get_dalle_url(dalle_prompt)
@@ -122,7 +119,7 @@ def main():
 
     # Generate a random 8-character string
     random_str = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
-    
+
     # Add file suffix
     random_str += ".png"
 
@@ -130,17 +127,17 @@ def main():
 
     img_url = uploaded_url.get('url')
 
-    row[dalle_output_column] = [img_url]
+    row[DALLE_OUTPUT_COLUMN] = [img_url]
 
     base.update_row(table_name, row['_id'], row)
 
 
 if __name__ == "__main__":
     # Check if the config table exists
-    check_config_table(config_table)
-    
+    check_config_table(CONFIG_TABLE)
+
     # Retrieve config values and update the local scope
-    config_values = get_config_values(config_table)
+    config_values = get_config_values(CONFIG_TABLE)
     locals().update(config_values)
 
     # Call the main function
