@@ -77,7 +77,7 @@ def check_config_table(config_table):
     if not config_table_found:
         raise SystemExit("Config table not found!")
 
-def call_dalle(dalle_prompt):
+def get_dalle_url(dalle_prompt):
     """
     Call the DALL-E API to generate an image based on the provided input.
 
@@ -114,7 +114,7 @@ def main():
     dalle_prompt = row[dalle_prompt_column]
 
     # Generate the image using the call_dalle function
-    generated_image_url = call_dalle(dalle_prompt)
+    generated_image_url = get_dalle_url(dalle_prompt)
 
     #img_url = info_dict.get('url')
     row[dalle_output_column] = [generated_image_url]
