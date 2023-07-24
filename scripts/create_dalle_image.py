@@ -11,6 +11,8 @@ import requests
 import base64
 import json
 import urllib.parse
+import random
+import string
 from seatable_api import Base, context
 
 # Configuration variables
@@ -116,8 +118,20 @@ def main():
     # Generate the image using the call_dalle function
     generated_image_url = get_dalle_url(dalle_prompt)
 
-    #img_url = info_dict.get('url')
-    row[dalle_output_column] = [generated_image_url]
+    generated_image = requests.get(generated_image_url)
+
+    # Generate a random 8-character string
+    random_str = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+    
+    # Add file suffix
+    random_str += ".png"
+
+    uploaded_url = base.upload_bytes_file(content=generated_image.content, name=random_str, file_type='image', replace=True)
+
+    img_url = uploaded_url.get('url')
+
+    row[dalle_output_column] = [img_url]
+
     base.update_row(table_name, row['_id'], row)
 
 
