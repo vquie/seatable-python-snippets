@@ -60,6 +60,7 @@ def call_chatgpt(openai_api_key):
     data = {
         "messages": [
             {"role": "system", "content": f"{chatgpt_prompt}"},
+            {"role": "assistant", "content": "Ok"},
             {"role": "user", "content": ""}
         ],
         "model": "gpt-3.5-turbo-16k",
