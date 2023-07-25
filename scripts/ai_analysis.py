@@ -65,7 +65,7 @@ def call_chatgpt(openai_api_key):
         ],
         "model": "gpt-3.5-turbo-16k",
         "max_tokens": 1000,
-        "temperature": 0.1,
+        "temperature": 0.3,
         "n": 1
     }
     for row in gpt_rows:
@@ -75,6 +75,7 @@ def call_chatgpt(openai_api_key):
         }
         data["messages"].append(role_obj)
     response = requests.post(url, headers=headers, json=data)
+    print(response.json()["usage"])
     generated_text = response.json()["choices"][0]["message"]["content"]
     return generated_text
 
