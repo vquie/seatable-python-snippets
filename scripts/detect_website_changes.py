@@ -2,8 +2,10 @@ __author__ = "Vitali Quiering"
 __version__ = "1.0.0"
 import hashlib
 from urllib.request import urlopen
+import xml.etree.ElementTree as ET
 from seatable_api import Base, context
 from html.parser import HTMLParser
+import requests
 
 class MyHTMLParser(HTMLParser):
     def __init__(self):
@@ -27,6 +29,7 @@ def fetch_and_parse_data():
     server_url = context.server_url
     api_token = context.api_token
     base = Base(api_token, server_url)
+    headers = {"User-Agent": "Mozilla/5.0"}
 
     try:
         base.auth()
@@ -47,23 +50,47 @@ def fetch_and_parse_data():
         exit(1)
 
     for row in sites_rows:
-        shahash = ''
         url = row['URL']
-    
-        try:
-            response = urlopen(url)
-            data = response.read()
+        text = '' 
 
-            parser = MyHTMLParser()  # create a new Parser for each URL
-            parser.feed(data.decode('utf-8'))
-            text = parser.text
+        if row['Type'] == 'static':
+        
+            try:
+                response = requests.get(url, headers=headers)
+                data = response.text
     
-            shahash = hashlib.sha256(data).hexdigest()
+                parser = MyHTMLParser() 
+                parser.feed(data)
+                text = parser.text
     
-        except Exception as e:
-            print(f"Failed to open URL {url} with error: {e}")
-            continue
+                shahash = hashlib.sha256(data.encode('utf-8')).hexdigest()
     
+            except Exception as e:
+                print(f"Failed to open URL {url} with error: {e}")
+                continue
+            
+        elif row['Type'] == 'rss':
+            try:
+                response = requests.get(url, headers=headers)
+                data = response.text
+                tree = ET.ElementTree(ET.fromstring(data))
+                root = tree.getroot()
+    
+                message = ''
+                for item in root.iter('item'):
+                    title = item.find('title').text
+                    description = item.find('description').text
+    
+                    message += title + description
+                
+                text = message
+    
+                shahash = hashlib.sha256(message.encode()).hexdigest()
+    
+            except Exception as e:
+                print(f"Failed to open URL {url} with error: {e}")
+                continue
+            
         existing_hash = row.get('Hash', '')
     
         if shahash != existing_hash:
