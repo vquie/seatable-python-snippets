@@ -1,11 +1,12 @@
 __author__ = "Vitali Quiering"
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 import hashlib
 from urllib.request import urlopen
 import xml.etree.ElementTree as ET
 from seatable_api import Base, context
 from html.parser import HTMLParser
 import requests
+import datetime
 
 class MyHTMLParser(HTMLParser):
     def __init__(self):
@@ -75,22 +76,31 @@ def fetch_and_parse_data():
                 data = response.text
                 tree = ET.ElementTree(ET.fromstring(data))
                 root = tree.getroot()
-    
-                message = ''
-                for item in root.iter('item'):
-                    title = item.find('title').text
-                    description = item.find('description').text
-    
-                    message += title + description
+
+                # Parse all items and their publication dates
+                items = [(item, datetime.datetime.strptime(item.find('pubDate').text, '%a, %d %b %Y %H:%M:%S %z')) for item in root.iter('item')]
+
+                # Sort items by date and get the most recent item
+                items.sort(key=lambda x: x[1], reverse=True)
+
+                # If there is at least one item, get the most recent one, else return None
+                most_recent_item = items[0][0] if items else None
+
+                if most_recent_item is not None:
+                    title = most_recent_item.find('title').text
+                    description = most_recent_item.find('description').text
+                    message = title + description
+                    text = message
+
+                    shahash = hashlib.sha256(message.encode()).hexdigest()
+                else:
+                    print(f"No items in RSS feed {url}")
+                    continue
                 
-                text = message
-    
-                shahash = hashlib.sha256(message.encode()).hexdigest()
-    
             except Exception as e:
                 print(f"Failed to open URL {url} with error: {e}")
                 continue
-            
+
         existing_hash = row.get('Hash', '')
     
         if shahash != existing_hash:
