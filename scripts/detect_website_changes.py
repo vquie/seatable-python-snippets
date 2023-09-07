@@ -1,5 +1,5 @@
 __author__ = "Vitali Quiering"
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 import hashlib
 from urllib.request import urlopen
 import xml.etree.ElementTree as ET
@@ -12,19 +12,13 @@ class MyHTMLParser(HTMLParser):
     def __init__(self):
         HTMLParser.__init__(self)
         self.text = ''
-        self.recording = 0
 
     def handle_starttag(self, tag, attrs):
-        if tag == 'p':
-            self.recording = 1
-
-    def handle_endtag(self, tag):
-        if tag == 'p':
-            self.recording = 0
+        if tag == 'body':
+            self.text = ''
 
     def handle_data(self, data):
-        if self.recording:
-            self.text += data
+        self.text += data
 
 def fetch_and_parse_data():
     server_url = context.server_url
@@ -52,22 +46,25 @@ def fetch_and_parse_data():
 
     for row in sites_rows:
         url = row['URL']
-        text = '' 
+        text = None
+        shahash = None
 
         if row['Type'] == 'static':
-        
             try:
                 response = requests.get(url, headers=headers)
-                data = response.text
-    
-                parser = MyHTMLParser() 
-                parser.feed(data)
-                text = parser.text
-    
-                shahash = hashlib.sha256(data.encode('utf-8')).hexdigest()
-    
             except Exception as e:
                 print(f"Failed to open URL {url} with error: {e}")
+                continue 
+
+            try:
+                parser = MyHTMLParser() 
+                parser.feed(response.text)
+                data = parser.text.strip()
+
+                text = data
+                shahash = hashlib.sha256(data.encode('utf-8')).hexdigest()
+            except Exception as e:
+                print(f"Failed to parse URL {url} with error: {e}")
                 continue
             
         elif row['Type'] == 'rss':
@@ -101,8 +98,12 @@ def fetch_and_parse_data():
                 print(f"Failed to open URL {url} with error: {e}")
                 continue
 
+        if text is None:
+            print(f"Failed to retrieve or parse URL {url}")
+            continue
+
         existing_hash = row.get('Hash', '')
-    
+
         if shahash != existing_hash:
             try:
                 row_data = {'Hash': shahash, 'Content': text}
