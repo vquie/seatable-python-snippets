@@ -1,31 +1,20 @@
-"""
 __author__ = "Vitali Quiering"
-__version__ = "1.0.0"
-"""
+__version__ = "1.1.0"
 
 import requests
 from seatable_api import Base, context
 
-# Define the name of the config table
 config_table = "_settings"
 server_url = context.server_url
 api_token = context.api_token
 
-# Create the Base object and authenticate
 base = Base(api_token, server_url)
 base.auth()
 
-# Get the context
-table_name = "Kassenbuch"
-gpt_rows = base.list_rows(table_name, view_name="AI Analysis")
+table_name = "Auswertung"
+gpt_rows = base.list_rows(table_name, view_name="Stats AI")
 
 def get_config_values(config_table):
-    """
-    Retrieve the values from the config table and return them as a dictionary.
-    
-    :param config_table: The name of the config table.
-    :return: A dictionary containing the config values.
-    """
     rows = base.list_rows(config_table)
     config_dict = {}
     for row in rows:
@@ -34,24 +23,12 @@ def get_config_values(config_table):
     return config_dict
 
 def check_config_table(config_table):
-    """
-    Check if the config table exists in the base's metadata.
-    Exit the script if the config table is not found.
-    
-    :param config_table: The name of the config table.
-    """
     base_metadata = base.get_metadata()
     config_table_found = any(table["name"] == config_table for table in base_metadata["tables"])
     if not config_table_found:
         raise SystemExit("Config table not found!")
 
-def call_chatgpt(openai_api_key):
-    """
-    Call the OpenAI GPT-3 API to generate a response based on the given prompt.
-    
-    :param openai_api_key: The API key for accessing the OpenAI GPT-3 API.
-    :return: The generated text response.
-    """
+def call_chatgpt(openai_api_key, chatgpt_prompt, gpt_rows):
     url = "https://api.openai.com/v1/chat/completions"
     headers = {
         "Content-Type": "application/json",
@@ -61,48 +38,37 @@ def call_chatgpt(openai_api_key):
         "messages": [
             {"role": "system", "content": f"{chatgpt_prompt}"},
             {"role": "assistant", "content": "Ok"},
-            {"role": "user", "content": ""}
+            {"role": "user", "content": f"{gpt_rows}"}
         ],
-        "model": "gpt-3.5-turbo-16k",
-        "max_tokens": 1000,
-        "temperature": 0.3,
-        "n": 1
+        "model": "gpt-4",
+        "temperature": 0.3
     }
-    for row in gpt_rows:
-        role_obj = {
-            "role": "user",
-            "content": str(row)
-        }
-        data["messages"].append(role_obj)
-    response = requests.post(url, headers=headers, json=data)
-    print(response.json()["usage"])
-    generated_text = response.json()["choices"][0]["message"]["content"]
+
+    print(gpt_rows)
+
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+        generated_text = response.json()["choices"][0]["message"]["content"]
+    except (requests.HTTPError, KeyError) as e:
+        print(f"Error was caught: {e}")
+        return None
     return generated_text
 
-def main():
-    """
-    The main function that executes the script.
-    """
-    # Generate the text using the call_chatgpt function
-    generated_text = call_chatgpt(openai_api_key)
+def main(openai_api_key, chatgpt_prompt, gpt_rows):
+    generated_text = call_chatgpt(openai_api_key, chatgpt_prompt, gpt_rows)
 
     row_data = {
         "Analysis": generated_text
     }
 
-    # Update the row in the table with the generated text
     base.append_row("AI Analysis", row_data)
 
 if __name__ == "__main__":
-    # Check if the config table exists
     check_config_table(config_table)
     
-    # Retrieve config values and update the local scope
     config_values = get_config_values(config_table)
-    locals().update(config_values)
+    openai_api_key = config_values.get('openai_api_key')
+    chatgpt_prompt = config_values.get('chatgpt_prompt')
 
-    # Call the main function
-    main()
-
-    # Terminate the script execution
-    exit()
+    main(openai_api_key, chatgpt_prompt, gpt_rows)
