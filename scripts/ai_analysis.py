@@ -1,8 +1,10 @@
 __author__ = "Vitali Quiering"
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 import requests
 from seatable_api import Base, context
+from io import StringIO
+import csv
 
 config_table = "_settings"
 server_url = context.server_url
@@ -28,7 +30,7 @@ def check_config_table(config_table):
     if not config_table_found:
         raise SystemExit("Config table not found!")
 
-def call_chatgpt(openai_api_key, chatgpt_prompt, gpt_rows):
+def call_chatgpt(openai_api_key, chatgpt_prompt, rows):
     url = "https://api.openai.com/v1/chat/completions"
     headers = {
         "Content-Type": "application/json",
@@ -38,13 +40,14 @@ def call_chatgpt(openai_api_key, chatgpt_prompt, gpt_rows):
         "messages": [
             {"role": "system", "content": f"{chatgpt_prompt}"},
             {"role": "assistant", "content": "Ok"},
-            {"role": "user", "content": f"{gpt_rows}"}
+            {"role": "user", "content": f"{rows}"}
         ],
         "model": "gpt-4",
         "temperature": 0.3
     }
 
-    print(gpt_rows)
+    # enable to debug
+    # print(rows)
 
     try:
         response = requests.post(url, headers=headers, json=data)
@@ -55,8 +58,20 @@ def call_chatgpt(openai_api_key, chatgpt_prompt, gpt_rows):
         return None
     return generated_text
 
-def main(openai_api_key, chatgpt_prompt, gpt_rows):
-    generated_text = call_chatgpt(openai_api_key, chatgpt_prompt, gpt_rows)
+def convert_to_csv(gpt_rows):
+    if not gpt_rows:
+        return ""
+    
+    headers = gpt_rows[0].keys()
+    output = StringIO()
+    writer = csv.DictWriter(output, fieldnames=headers)
+    writer.writeheader()
+    writer.writerows(gpt_rows)
+    
+    return output.getvalue()
+
+def main(openai_api_key, chatgpt_prompt, csv_data):
+    generated_text = call_chatgpt(openai_api_key, chatgpt_prompt, csv_data)
 
     row_data = {
         "Analysis": generated_text
@@ -71,4 +86,5 @@ if __name__ == "__main__":
     openai_api_key = config_values.get('openai_api_key')
     chatgpt_prompt = config_values.get('chatgpt_prompt')
 
-    main(openai_api_key, chatgpt_prompt, gpt_rows)
+    csv_data = convert_to_csv(gpt_rows)
+    main(openai_api_key, chatgpt_prompt, csv_data)
