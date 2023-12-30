@@ -29,20 +29,25 @@ def merge(column_name, column_value):
 def merge_links(column_name, column_value):
     if column_name in updated_data:
         for row_id in column_value:
-            print(f"row_id: {row_id}, column_value: {column_value}")
             try:
+                # Get the linked records for the current row_id
                 other_row_ids = base.get_linked_records(table_name, column_name, [{'row_id': row_id}])
                 for other_row_id in other_row_ids:
-                    updated_data[column_name].extend(other_row_id)
+                    # Check if the other_row_id is already in the updated_data for the current column_name
+                    if other_row_id not in updated_data[column_name]:
+                        # If not, add the link
+                        base.add_link(column_name, table_name, other_table_name, row_id, other_row_id['row_id'])
+                        updated_data[column_name].append(other_row_id)
             except Exception as e:
                 print(f"Error while getting linked records for row_id {row_id}: {e}")
     else:
         updated_data[column_name] = []
         for row_id in column_value:
-            print(f"row_id: {row_id}, column_value: {column_value}")
             try:
-                other_row_id = base.get_linked_records(table_name, column_name, [{'row_id': row_id}])
-                updated_data[column_name].extend(other_row_id)
+                other_row_ids = base.get_linked_records(table_name, column_name, [{'row_id': row_id}])
+                for other_row_id in other_row_ids:
+                    base.add_link(column_name, table_name, other_table_name, row_id, other_row_id['row_id'])
+                    updated_data[column_name].append(other_row_id)
             except Exception as e:
                 print(f"Error while getting linked records for row_id {row_id}: {e}")
 
