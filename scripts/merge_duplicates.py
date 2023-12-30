@@ -15,6 +15,8 @@ all_rows = base.list_rows(table_name)
 rows_to_merge = [r for r in all_rows if r.get(unique_identifier) == row.get(unique_identifier)]
 updated_data = {}
 
+print(rows_to_merge)
+
 meta = base.get_metadata()
 table_meta = next((table for table in meta.get('tables', []) if table.get('name') == table_name), None)
 column_metas = {column['name']: column for column in table_meta['columns']}
@@ -27,26 +29,31 @@ def merge(column_name, column_value):
         updated_data[column_name] = column_value if isinstance(column_value, list) else [column_value]
 
 def merge_links(column_name, column_value):
-    if column_name in updated_data:
-        for row_id in column_value:
-            try:
-                # Get the linked records for the current row_id
-                other_row_ids = base.get_linked_records(table_name, column_name, [{'row_id': row_id}])
-                for other_row_id in other_row_ids:
-                    # Check if the other_row_id is already in the updated_data for the current column_name
-                    if other_row_id not in updated_data[column_name]:
-                        # If not, add the link
-                        base.add_link(column_name, table_name, other_table_name, row_id, other_row_id['row_id'])
-                        updated_data[column_name].append(other_row_id)
-            except Exception as e:
-                print(f"Error while getting linked records for row_id {row_id}: {e}")
-    else:
+    # Get the link id for the current column
+    link_id = base.get_column_link_id(table_name, column_name)
+
+    for row_id in column_value:
+        try:
+            # Get the linked records for the current row_id
+            other_row_ids = base.get_linked_records(table_name, column_name,
+                                                    [{'row_id': row_id, 'offset': 0, 'limit': 100}])
+            for other_row_id in other_row_ids.get(row_id, []):
+                # Check if the other_row_id is already in the updated_data for the current column_name
+                if other_row_id not in updated_data[column_name]:
+                    # If not, add the link
+                    base.add_link(link_id, table_name, other_table_name, row_id, other_row_id['row_id'])
+                    updated_data[column_name].append(other_row_id)
+        except Exception as e:
+            print(f"Error while getting linked records for row_id {row_id}: {e}")
+
+    if column_name not in updated_data:
         updated_data[column_name] = []
         for row_id in column_value:
             try:
-                other_row_ids = base.get_linked_records(table_name, column_name, [{'row_id': row_id}])
-                for other_row_id in other_row_ids:
-                    base.add_link(column_name, table_name, other_table_name, row_id, other_row_id['row_id'])
+                other_row_ids = base.get_linked_records(table_name, column_name,
+                                                        [{'row_id': row_id, 'offset': 0, 'limit': 100}])
+                for other_row_id in other_row_ids.get(row_id, []):
+                    base.add_link(link_id, table_name, other_table_name, row_id, other_row_id['row_id'])
                     updated_data[column_name].append(other_row_id)
             except Exception as e:
                 print(f"Error while getting linked records for row_id {row_id}: {e}")
@@ -95,3 +102,10 @@ base.update_row(table_name, row['_id'], updated_data)
 for row_to_merge in rows_to_merge:
     if row_to_merge['_id'] != row['_id']:
         base.delete_row(table_name, row_to_merge['_id'])
+
+print(base.get_row(table_name, row['_id']))
+
+# old
+[{'_id': 'bspe-kfNShOCP81miY0_RQ', '_mtime': '2023-12-30T21:21:12.871+00:00', '_ctime': '2023-12-30T21:15:12.330+00:00', 'Datum': '2023-12-30', 'weekday': 'Samstag', "what I've done today": ['d9eneCiLQHKr48m_WB8wYQ'], 'diary notes': '1\n2', 'Datum (Search Item)': '30.12.2023'}, {'_id': 'Pp34RCFVQsKDTbtPVSXzhQ', '_mtime': '2023-12-30T21:22:17.478+00:00', '_ctime': '2023-12-30T21:22:13.072+00:00', 'Datum': '2023-12-30', 'weekday': 'Samstag', "what I've done today": ['DmyI_GnxRq60o6aIlvjhbQ'], 'diary notes': '3', 'Datum (Search Item)': '30.12.2023'}]
+# new
+{'_id': 'bspe-kfNShOCP81miY0_RQ', '_mtime': '2023-12-30T21:22:51.928+00:00', '_ctime': '2023-12-30T21:15:12.330+00:00', 'Datum': '2023-12-30', 'weekday': 'Samstag', "what I've done today": ['d9eneCiLQHKr48m_WB8wYQ'], 'diary notes': '1\n2\n3', 'Datum (Search Item)': '30.12.2023'}
